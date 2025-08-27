@@ -1,12 +1,38 @@
-# SIGLAT Minimal API Documentation
+# SIGLAT Core API Documentation
 
 ## Overview
-This minimal API implementation provides basic CRUD operations with pagination for the SIGLAT emergency response system. All endpoints are publicly accessible for demonstration purposes.
+This API implementation provides comprehensive emergency response operations for the SIGLAT system, supporting multiple agencies including BFP (Bureau of Fire Protection) and PNP (Philippine National Police). The API includes role-based access control for different emergency response agencies.
 
 ## Base URL
 ```
 http://localhost:5000/api/v1/public
 ```
+
+## Supported Roles and Access Levels
+
+### Public Access
+- **Citizens**: Report incidents, view public information
+- **Anonymous**: Health checks, basic system information
+
+### Emergency Response Agencies
+- **BFP (Bureau of Fire Protection)**: Fire incident management, unit dispatch, equipment tracking
+- **PNP (Philippine National Police)**: Crime investigation, patrol management, warrant tracking
+- **Ambulance Services**: Medical emergency response, patient transport
+- **Admin**: System administration, cross-agency coordination
+
+### Role-Based Endpoints
+
+#### BFP (Fire Protection) - `/api/v1/bfp/`
+- Fire incident management and response
+- Fire unit tracking and dispatch
+- Equipment and resource management
+- Fire statistics and reporting
+
+#### PNP (Police) - `/api/v1/pnp/`
+- Police incident reporting and investigation
+- Patrol unit management
+- Warrant and evidence tracking
+- Crime statistics and case management
 
 ## Pagination
 All list endpoints support pagination with the following query parameters:
@@ -85,7 +111,73 @@ All list endpoints support pagination with the following query parameters:
 - **DELETE** `/users/{email}`
   - Delete user
 
+### BFP (Bureau of Fire Protection) Endpoints
+- **GET** `/bfp/fireoperations/health`
+  - BFP service health status
+- **GET** `/bfp/fireoperations/incidents`
+  - Get fire incidents with pagination and search
+  - Query params: `page`, `pageSize`, `search`
+- **POST** `/bfp/fireoperations/incidents/{incidentId}/respond`
+  - Log BFP response to fire incident
+- **GET** `/bfp/fireoperations/units`
+  - Get fire units and their status
+- **POST** `/bfp/fireoperations/units/{unitId}/dispatch`
+  - Dispatch fire unit to incident
+- **GET** `/bfp/fireoperations/equipment`
+  - Get fire equipment status and availability
+- **GET** `/bfp/fireoperations/statistics`
+  - Get fire department statistics and metrics
+- **POST** `/bfp/fireoperations/alerts`
+  - Create fire emergency alert
+
+### PNP (Philippine National Police) Endpoints
+- **GET** `/pnp/policeoperations/health`
+  - PNP service health status
+- **GET** `/pnp/policeoperations/incidents`
+  - Get police incidents with pagination and search
+  - Query params: `page`, `pageSize`, `search`
+- **POST** `/pnp/policeoperations/incidents/{incidentId}/respond`
+  - Log PNP response to incident
+- **GET** `/pnp/policeoperations/units`
+  - Get police units and patrol status
+- **POST** `/pnp/policeoperations/units/{unitId}/dispatch`
+  - Dispatch police unit to incident
+- **GET** `/pnp/policeoperations/patrols`
+  - Get active patrol information
+- **GET** `/pnp/policeoperations/statistics`
+  - Get police department statistics and metrics
+- **POST** `/pnp/policeoperations/alerts`
+  - Create police emergency alert
+- **GET** `/pnp/policeoperations/warrants`
+  - Get active warrants with pagination
+- **POST** `/pnp/policeoperations/incidents/{incidentId}/evidence`
+  - Submit evidence for incident
+
 ## Example Requests
+
+### BFP Fire Operations
+```bash
+# Get fire incidents
+curl -H "Authorization: Bearer {bfp_token}" \
+  "http://localhost:5000/api/v1/bfp/fireoperations/incidents?search=structure"
+
+# Dispatch fire unit
+curl -X POST -H "Authorization: Bearer {bfp_token}" \
+  -H "Content-Type: application/json" \
+  "http://localhost:5000/api/v1/bfp/fireoperations/units/1/dispatch" \
+  -d '{"incidentId": "123e4567-e89b-12d3-a456-426614174000", "priority": "high"}'
+```
+
+### PNP Police Operations
+```bash
+# Get police incidents
+curl -H "Authorization: Bearer {pnp_token}" \
+  "http://localhost:5000/api/v1/pnp/policeoperations/incidents?search=robbery"
+
+# Get active warrants
+curl -H "Authorization: Bearer {pnp_token}" \
+  "http://localhost:5000/api/v1/pnp/policeoperations/warrants?page=1&pageSize=10"
+```
 
 ### Get Reports with Pagination
 ```bash
@@ -117,20 +209,42 @@ curl -X POST "http://localhost:5000/api/v1/public/auth/login" \
 
 ## Features Implemented
 
-1. **Complete CRUD Operations**: All endpoints support Create, Read, Update, Delete operations
-2. **Advanced Pagination**: Includes page navigation, search, sorting, and metadata
-3. **Input Validation**: Model validation with proper error responses
-4. **Mock Data**: Realistic sample data for testing
-5. **Consistent API Design**: RESTful endpoints with standard HTTP methods
-6. **Error Handling**: Proper HTTP status codes and error messages
-7. **Health Monitoring**: Basic and detailed health check endpoints
-8. **Authentication Flow**: Complete auth endpoints (mock implementation)
+1. **Role-Based Access Control**: Separate endpoints for BFP, PNP, Ambulance, Admin, and Citizen roles
+2. **Emergency Agency Operations**: Specialized controllers for fire protection and police operations
+3. **Complete CRUD Operations**: All endpoints support Create, Read, Update, Delete operations
+4. **Advanced Pagination**: Includes page navigation, search, sorting, and metadata
+5. **Input Validation**: Model validation with proper error responses
+6. **Mock Data**: Realistic sample data for testing different emergency scenarios
+7. **Consistent API Design**: RESTful endpoints with standard HTTP methods
+8. **Error Handling**: Proper HTTP status codes and error messages
+9. **Health Monitoring**: Basic and detailed health check endpoints
+10. **Authentication Flow**: JWT-based authentication with role-based authorization
+11. **Multi-Agency Coordination**: Cross-agency access for Admin and emergency response
 
 ## Mock Data
 The API includes realistic mock data for:
-- 3 sample incident reports (fire, medical, traffic)
-- 5 sample users from different departments
-- Proper timestamps and relationships
+- **Fire Incidents**: Structure fires, vehicle fires, forest fires with BFP response data
+- **Police Incidents**: Traffic accidents, robberies, drug operations with PNP case data
+- **Emergency Units**: Fire trucks, police patrols, ambulances with real-time status
+- **Personnel**: Officers, firefighters, paramedics with role assignments
+- **Equipment**: Fire equipment, police vehicles, medical supplies with availability status
+
+## Agency-Specific Features
+
+### BFP (Bureau of Fire Protection)
+- Fire incident classification and tracking
+- Fire unit dispatch and resource allocation
+- Equipment inventory and maintenance tracking
+- Fire damage assessment and statistics
+- Multi-alarm fire coordination
+
+### PNP (Philippine National Police)
+- Crime incident reporting and investigation
+- Patrol unit management and dispatch
+- Warrant tracking and enforcement
+- Evidence collection and chain of custody
+- Criminal case management
+- Traffic enforcement and accident response
 
 ## Testing
 You can test the API using:
@@ -139,7 +253,19 @@ You can test the API using:
 - Postman or similar API testing tools
 
 ## Notes
-- All endpoints are currently set to `[AllowAnonymous]` for testing
-- JWT tokens are mock implementations
-- Database operations are simulated with in-memory data
+- Role-based endpoints require proper JWT authentication with assigned roles
+- BFP endpoints are restricted to BFP personnel and authorized users
+- PNP endpoints are restricted to PNP personnel and authorized users  
+- Admin endpoints allow cross-agency access for system coordination
+- Public endpoints remain accessible for citizen reporting and information
+- JWT tokens are currently mock implementations for development
+- Database operations are simulated with in-memory data for testing
 - In production, implement proper authentication, database persistence, and security measures
+
+## Authorization Roles
+- **BFP**: Bureau of Fire Protection personnel
+- **PNP**: Philippine National Police personnel  
+- **Ambulance**: Emergency medical services personnel
+- **Admin**: System administrators with cross-agency access
+- **Citizen**: General public users for reporting incidents
+- **Anonymous**: Unauthenticated users with limited access
