@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
 using SIGLATAPI.Middleware;
-using SIGLATAPI.Services;
 
 DotEnv.Load();
 var Origin = "_Origin";
@@ -33,7 +32,6 @@ builder.Services.AddDbContext<AppDBContext>((serviceProvider, options) =>
 });
 
 builder.Services.AddHostedService<DatabaseInitializer>();
-builder.Services.AddHostedService<AdminInitializationService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: Origin,

@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: siglat-postgres
     restart: unless-stopped
     environment:
@@ -34,41 +34,124 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      # Database Configuration
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: siglat_user
       DB_PASS: ${DB_PASS:-SiglatSecure2025!}
       DB_DB: siglat
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this}
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
       JWT_ISSUER: siglat-core-api
       JWT_AUDIENCE: siglat-clients
-      ASPNETCORE_ENVIRONMENT: Production
-      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002
+      
+      # ASP.NET Core Configuration
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      
+      # CORS Configuration
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:5173}
+      
+      # Logging Configuration
+      Logging__LogLevel__Default: Information
+      Logging__LogLevel__Microsoft: Warning
+      Logging__LogLevel__Microsoft.Hosting.Lifetime: Information
     ports:
-      - "5000:8080"
+      - "${API_PORT:-5000}:8080"
     networks:
       - siglat-network
     volumes:
       - api_logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/v1/public/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
-  # Future frontend services will be added here
+  # Redis for caching and sessions (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: siglat-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - siglat-network
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend Services (uncomment when available)
   # citizen-ui:
-  #   build: ../frontends/citizen-ui
+  #   build: 
+  #     context: ../SIGLAT-UI
+  #     dockerfile: Dockerfile
+  #   container_name: siglat-citizen-ui
+  #   restart: unless-stopped
+  #   environment:
+  #     VITE_API_URL: http://localhost:${API_PORT:-5000}/api/v1
   #   ports:
-  #     - "3000:3000"
+  #     - "${CITIZEN_UI_PORT:-3000}:3000"
+  #   networks:
+  #     - siglat-network
+  #   depends_on:
+  #     - siglat-core-api
   
-  # ambulance-ui:
-  #   build: ../frontends/ambulance-ui  
+  # bfp-ui:
+  #   build: 
+  #     context: ../frontends/bfp-ui
+  #     dockerfile: Dockerfile
+  #   container_name: siglat-bfp-ui
+  #   restart: unless-stopped
+  #   environment:
+  #     REACT_APP_API_URL: http://localhost:${API_PORT:-5000}/api/v1
   #   ports:
-  #     - "3001:3000"
+  #     - "${BFP_UI_PORT:-3001}:3000"
+  #   networks:
+  #     - siglat-network
+  #   depends_on:
+  #     - siglat-core-api
+  
+  # pnp-ui:
+  #   build: 
+  #     context: ../frontends/pnp-ui
+  #     dockerfile: Dockerfile
+  #   container_name: siglat-pnp-ui
+  #   restart: unless-stopped
+  #   environment:
+  #     REACT_APP_API_URL: http://localhost:${API_PORT:-5000}/api/v1
+  #   ports:
+  #     - "${PNP_UI_PORT:-3002}:3000"
+  #   networks:
+  #     - siglat-network
+  #   depends_on:
+  #     - siglat-core-api
   
   # admin-ui:
-  #   build: ../frontends/admin-ui
+  #   build: 
+  #     context: ../frontends/admin-ui
+  #     dockerfile: Dockerfile
+  #   container_name: siglat-admin-ui
+  #   restart: unless-stopped
+  #   environment:
+  #     REACT_APP_API_URL: http://localhost:${API_PORT:-5000}/api/v1
   #   ports:
-  #     - "3002:3000"
+  #     - "${ADMIN_UI_PORT:-3003}:3000"
+  #   networks:
+  #     - siglat-network
+  #   depends_on:
+  #     - siglat-core-api
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local
   api_logs:
     driver: local
@@ -76,3 +159,6 @@ volumes:
 networks:
   siglat-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
